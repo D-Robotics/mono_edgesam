@@ -38,7 +38,9 @@ int RenderSeg(cv::Mat &mat, Parsing &seg, std::string& saving_path);
 
 class EdgeSamOutputParser {
  public:
-  EdgeSamOutputParser(int output_height, int output_width, int num_classes, float mask_threshold) {
+  EdgeSamOutputParser(int model_h, int model_w, int output_height, int output_width, int num_classes, float mask_threshold) {
+    model_h_ = model_h;
+    model_w_ = model_w;
     output_height_ = output_height;
     output_width_ = output_width;
     num_classes_ = num_classes;
@@ -50,8 +52,6 @@ class EdgeSamOutputParser {
       std::shared_ptr<DnnParserResult> &result,
       const int resized_img_h,
       const int resized_img_w,
-      const int model_h,
-      const int model_w,
       std::vector<std::shared_ptr<DNNTensor>>& output_tensors,
       std::vector<std::vector<float>>& boxes);
 
@@ -59,17 +59,14 @@ class EdgeSamOutputParser {
     const float* mask,
     const int resized_img_h,
     const int resized_img_w,
-    const int model_h,
-    const int model_w,
     Perception& perception);
 
   int32_t GenMaskScale(
+    const int16_t* scores,
     const int8_t* mask,
     const std::vector<std::vector<float>>& boxes,
     const int resized_img_h,
     const int resized_img_w,
-    const int model_h,
-    const int model_w,
     Perception& perception);
 
   int32_t UpdateBox(std::vector<float> &box,
@@ -77,6 +74,8 @@ class EdgeSamOutputParser {
 
  private:
   int num_classes_ = 1;
+  int model_h_ = 1024;
+  int model_w_ = 1024;
   int output_height_ = 256;
   int output_width_ = 256;
   float mask_threshold_ = 0.0;

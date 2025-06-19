@@ -36,6 +36,12 @@ def generate_launch_description():
     vocabulary_file_name_launch_arg = DeclareLaunchArgument(
         "dosod_vocabulary_file_name", default_value=TextSubstitution(text="config/offline_vocabulary.json")
     )
+    encoder_model_file_name_launch_arg = DeclareLaunchArgument(
+        "sam_encoder_model_file_name", default_value=TextSubstitution(text="config/edgesam_encoder_nv12.bin")
+    )
+    decoder_model_file_name_launch_arg = DeclareLaunchArgument(
+        "sam_decoder_model_file_name", default_value=TextSubstitution(text="config/edgesam_decoder_int8_nchw_no_dequantied.bin")
+    )
 
     # 算法pkg
     sam_node = Node(
@@ -49,6 +55,10 @@ def generate_launch_description():
             {"is_shared_mem_sub": 0},
             {"ros_img_sub_topic_name": "/image_left_raw"},
             {"ai_msg_sub_topic_name": "/hobot_dnn_detection"},
+            {"encoder_model_file_name": LaunchConfiguration(
+                "sam_encoder_model_file_name")},
+            {"decoder_model_file_name": LaunchConfiguration(
+                "sam_decoder_model_file_name")},
             {"msg_pub_topic_name": LaunchConfiguration(
                 "sam_msg_pub_topic_name")}
         ],
@@ -76,11 +86,15 @@ def generate_launch_description():
             {"class_mode": 0},
             {"score_threshold": 0.6}
         ],
-        arguments=['--ros-args', '--log-level', 'info']
+        arguments=['--ros-args', '--log-level', 'warn']
     )
 
     return LaunchDescription([
+        encoder_model_file_name_launch_arg,
+        decoder_model_file_name_launch_arg,
         msg_pub_topic_name_launch_arg,
+        model_file_name_launch_arg,
+        vocabulary_file_name_launch_arg,
         # 启动dosod pkg
         dosod_node,
         # 启动sam pkg

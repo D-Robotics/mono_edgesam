@@ -91,6 +91,10 @@ EdgeSamNode::EdgeSamNode(const std::string& node_name,
   this->declare_parameter<int>("dump_render_img", dump_render_img_);
   this->declare_parameter<int>("feed_type", feed_type_);
   this->declare_parameter<std::string>("image", image_file_);
+  this->declare_parameter<std::string>("encoder_model_file_name",
+                                       model_file_names_[0]);
+  this->declare_parameter<std::string>("decoder_model_file_name",
+                                       model_file_names_[1]);
   this->declare_parameter<int>("is_regular_box", is_regular_box_);
   this->declare_parameter<int>("is_padding_seg", is_padding_seg_);
   this->declare_parameter<int>("is_shared_mem_sub", is_shared_mem_sub_);
@@ -106,6 +110,8 @@ EdgeSamNode::EdgeSamNode(const std::string& node_name,
   this->get_parameter<int>("dump_render_img", dump_render_img_);
   this->get_parameter<int>("feed_type", feed_type_);
   this->get_parameter<std::string>("image", image_file_);
+  this->get_parameter<std::string>("encoder_model_file_name", model_file_names_[0]);
+  this->get_parameter<std::string>("decoder_model_file_name", model_file_names_[1]);
   this->get_parameter<int>("is_regular_box", is_regular_box_);
   this->get_parameter<int>("is_padding_seg", is_padding_seg_);
   this->get_parameter<int>("is_shared_mem_sub", is_shared_mem_sub_);
@@ -123,6 +129,8 @@ EdgeSamNode::EdgeSamNode(const std::string& node_name,
      << "\n dump_render_img: " << dump_render_img_
      << "\n feed_type(0:local, 1:sub): " << feed_type_
      << "\n image: " << image_file_
+     << "\n encoder_model_file_name: " << model_file_names_[0]
+     << "\n decoder_model_file_name: " << model_file_names_[1]
      << "\n is_regular_box: " << is_regular_box_
      << "\n is_padding_seg: " << is_padding_seg_
      << "\n is_shared_mem_sub: " << is_shared_mem_sub_
@@ -210,7 +218,13 @@ int EdgeSamNode::SetNodePara() {
   int output_width = tensor_properties.alignedShape.dimensionSize[3];
   int num_classes = tensor_properties.alignedShape.dimensionSize[0];
 
-  output_parser_ = std::make_shared<EdgeSamOutputParser>(output_height, output_width, num_classes, 0.0);
+  output_parser_ = std::make_shared<EdgeSamOutputParser>(
+                                      model_input_height_, 
+                                      model_input_width_, 
+                                      output_height, 
+                                      output_width, 
+                                      num_classes, 
+                                      0.0);
 
   return 0;
 }
@@ -339,8 +353,6 @@ int EdgeSamNode::PostProcess(
   output_parser_->Parse(det_result,
                 parser_output->resized_h,
                 parser_output->resized_w,
-                model_input_height_,
-                model_input_width_,
                 parser_output->output_tensors,
                 parser_output->boxes);
   if (is_padding_seg_ == 1) {

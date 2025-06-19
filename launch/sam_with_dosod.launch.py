@@ -42,6 +42,12 @@ def generate_launch_description():
     vocabulary_file_name_launch_arg = DeclareLaunchArgument(
         "dosod_vocabulary_file_name", default_value=TextSubstitution(text="config/offline_vocabulary.json")
     )
+    encoder_model_file_name_launch_arg = DeclareLaunchArgument(
+        "sam_encoder_model_file_name", default_value=TextSubstitution(text="config/edgesam_encoder_nv12.bin")
+    )
+    decoder_model_file_name_launch_arg = DeclareLaunchArgument(
+        "sam_decoder_model_file_name", default_value=TextSubstitution(text="config/edgesam_decoder_int8_nchw_no_dequantied.bin")
+    )
 
     camera_type = os.getenv('CAM_TYPE')
     print("camera_type is ", camera_type)
@@ -181,6 +187,10 @@ def generate_launch_description():
             {"is_regular_box": 0},
             {"is_shared_mem_sub": 1},
             {"ai_msg_sub_topic_name": "/hobot_dnn_detection"},
+            {"encoder_model_file_name": LaunchConfiguration(
+                "sam_encoder_model_file_name")},
+            {"decoder_model_file_name": LaunchConfiguration(
+                "sam_decoder_model_file_name")},
             {"msg_pub_topic_name": LaunchConfiguration(
                 "sam_msg_pub_topic_name")}
         ],
@@ -223,9 +233,10 @@ def generate_launch_description():
             image_width_launch_arg,
             image_height_launch_arg,
             msg_pub_topic_name_launch_arg,
-            is_regular_box_launch_arg,
             model_file_name_launch_arg,
             vocabulary_file_name_launch_arg,
+            encoder_model_file_name_launch_arg,
+            decoder_model_file_name_launch_arg,
             # 启动零拷贝环境配置node
             shared_mem_node,
             # 图片发布pkg
@@ -245,9 +256,10 @@ def generate_launch_description():
             image_width_launch_arg,
             image_height_launch_arg,
             msg_pub_topic_name_launch_arg,
-            is_regular_box_launch_arg,
             model_file_name_launch_arg,
             vocabulary_file_name_launch_arg,
+            encoder_model_file_name_launch_arg,
+            decoder_model_file_name_launch_arg,
             # 启动零拷贝环境配置node
             shared_mem_node,
             # 图片发布pkg

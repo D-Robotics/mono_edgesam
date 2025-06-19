@@ -13,16 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <fstream>
-
 #include "include/edgesam_output_parser.h"
 
 int32_t EdgeSamOutputParser::Parse(
     std::shared_ptr<DnnParserResult> &result,
     const int resized_img_h,
     const int resized_img_w,
-    const int model_h,
-    const int model_w,
     std::vector<std::shared_ptr<DNNTensor>>& output_tensors,
     std::vector<std::vector<float>>& boxes) {
 
@@ -37,13 +33,15 @@ int32_t EdgeSamOutputParser::Parse(
   result->perception.type = Perception::SEG;
   hbSysFlushMem(&(output_tensors[1]->sysMem[0]), HB_SYS_MEM_CACHE_INVALIDATE);
 
-  int ret = 0;
+  int ret = -1;
   if (output_tensors[1]->properties.quantiType == NONE) {
-    float* data = reinterpret_cast<float*>(output_tensors[1]->sysMem[0].virAddr);
-    ret = GenMask(data, resized_img_h, resized_img_w, model_h, model_w, result->perception);
-  } else if (output_tensors[1]->properties.quantiType == SCALE) {
-    int8_t* data = reinterpret_cast<int8_t*>(output_tensors[1]->sysMem[0].virAddr);
-    ret = GenMaskScale(data, boxes, resized_img_h, resized_img_w, model_h, model_w, result->perception);
+    float* masks = reinterpret_cast<float*>(output_tensors[1]->sysMem[0].virAddr);
+    ret = GenMask(masks, resized_img_h, resized_img_w, result->perception);
+  } else if (output_tensors[0]->properties.quantiType == SCALE && 
+              output_tensors[1]->properties.quantiType == SCALE) {
+    int16_t* scores = reinterpret_cast<int16_t*>(output_tensors[0]->sysMem[0].virAddr);
+    int8_t* masks = reinterpret_cast<int8_t*>(output_tensors[1]->sysMem[0].virAddr);
+    ret = GenMaskScale(scores, masks, boxes, resized_img_h, resized_img_w, result->perception);
   }
 
   hbSysFreeMem(&(output_tensors[0]->sysMem[0]));
@@ -61,12 +59,10 @@ int32_t EdgeSamOutputParser::Parse(
 int32_t EdgeSamOutputParser::GenMask(const float* mask,
                                         const int resized_img_h,
                                         const int resized_img_w,
-                                        const int model_h,
-                                        const int model_w,
                                         Perception& perception) {
   int channel = 4;
-  float valid_h_ratio = static_cast<float>(resized_img_h) / static_cast<float>(model_h);
-  float valid_w_ratio = static_cast<float>(resized_img_w) / static_cast<float>(model_w);
+  float valid_h_ratio = static_cast<float>(resized_img_h) / static_cast<float>(model_h_);
+  float valid_w_ratio = static_cast<float>(resized_img_w) / static_cast<float>(model_w_);
 
   int valid_h = static_cast<int>(valid_h_ratio * output_height_);
   int valid_w = static_cast<int>(valid_w_ratio * output_width_);
@@ -100,8 +96,8 @@ int32_t EdgeSamOutputParser::GenMask(const float* mask,
 
   perception.seg.valid_h = valid_h;
   perception.seg.valid_w = valid_w;
-  perception.seg.height = static_cast<int>(model_h * valid_h_ratio);
-  perception.seg.width = static_cast<int>(model_w * valid_w_ratio);
+  perception.seg.height = static_cast<int>(model_h_ * valid_h_ratio);
+  perception.seg.width = static_cast<int>(model_w_ * valid_w_ratio);
   perception.seg.channel = channel;
   perception.seg.num_classes = num_classes_ + 1;
 
@@ -128,38 +124,39 @@ int32_t EdgeSamOutputParser::GenMask(const float* mask,
   return 0;
 }
 
-int32_t EdgeSamOutputParser::GenMaskScale(const int8_t* mask,
+int32_t EdgeSamOutputParser::GenMaskScale(const int16_t* scores,
+                                        const int8_t* mask,
                                         const std::vector<std::vector<float>>& boxes,
                                         const int resized_img_h,
                                         const int resized_img_w,
-                                        const int model_h,
-                                        const int model_w,
                                         Perception& perception) {
-  int channel = 1;
+  int channel = 4;
 
-  float valid_h_ratio = static_cast<float>(resized_img_h) / static_cast<float>(model_h);
-  float valid_w_ratio = static_cast<float>(resized_img_w) / static_cast<float>(model_w);
+  float valid_h_ratio = static_cast<float>(resized_img_h) / static_cast<float>(model_h_);
+  float valid_w_ratio = static_cast<float>(resized_img_w) / static_cast<float>(model_w_);
 
   int valid_h = static_cast<int>(valid_h_ratio * output_height_);
   int valid_w = static_cast<int>(valid_w_ratio * output_width_);
 
-  int stride = channel * output_height_ * output_width_;
+  int stride = output_height_ * output_width_;
   std::vector<cv::Mat> parsing_imgs;
-  for (int n = 0; n < num_classes_; n++) {
+  int num_classes = (num_classes_ < boxes.size()) ? num_classes_ : boxes.size();
+  for (int n = 0; n < num_classes; n++) {
+
+    int index = 0;
+    int16_t score = 0;
+    for (int i = 0; i < 4; i++) {
+      if (scores[n * 8 + i] > score) {
+        index = i;
+        score = scores[n * 8 + i];
+      }
+    }
     cv::Mat parsing_img(valid_h, valid_w, CV_8UC1, cv::Scalar::all(0));
     int8_t *parsing_img_ptr = parsing_img.ptr<int8_t>();
-    // int x1 = static_cast<int>(boxes[n][0] / 4);
-    // int y1 = static_cast<int>(boxes[n][1] / 4);
-    // int x2 = static_cast<int>(boxes[n][2] / 4);
-    // int y2 = static_cast<int>(boxes[n][3] / 4);
-    int x1 = 0;
-    int y1 = 0;
-    int x2 = valid_w;
-    int y2 = valid_h;
     for (int h = 0; h < valid_h; h++) {
-      for (int w = x1; w < x2; w++) {
+      for (int w = 0; w < valid_w; w++) {
         int offect = h * output_width_ + w;
-        const int8_t* data = mask + n * stride + offect;
+        const int8_t* data = mask + (n * channel + index) * stride + offect;
         *parsing_img_ptr++ = data[0];
       }
     }
@@ -181,12 +178,12 @@ int32_t EdgeSamOutputParser::GenMaskScale(const int8_t* mask,
 
   perception.seg.valid_h = valid_h;
   perception.seg.valid_w = valid_w;
-  perception.seg.height = static_cast<int>(model_h * valid_h_ratio);
-  perception.seg.width = static_cast<int>(model_w * valid_w_ratio);
+  perception.seg.height = static_cast<int>(model_h_ * valid_h_ratio);
+  perception.seg.width = static_cast<int>(model_w_ * valid_w_ratio);
   perception.seg.channel = channel;
-  perception.seg.num_classes = num_classes_ + 1;
+  perception.seg.num_classes = num_classes + 1;
 
-  for (int n = 0; n < num_classes_; n++) {
+  for (int n = 0; n < num_classes; n++) {
     auto &parsing_img = parsing_imgs[n];
     int8_t *parsing_img_ptr = parsing_img.ptr<int8_t>();
     for (int h = 0; h < valid_h; h++) {
@@ -200,8 +197,8 @@ int32_t EdgeSamOutputParser::GenMaskScale(const int8_t* mask,
           top_index = n + 1;
         }
         if (top_index != -1) {
-          perception.seg.seg[h * valid_w + w] = top_index;
-          perception.seg.data[h * valid_w + w] = static_cast<float>(top_index);
+          perception.seg.seg[offect] = top_index;
+          perception.seg.data[offect] = static_cast<float>(top_index);
         }  
       }
     }
