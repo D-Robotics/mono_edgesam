@@ -256,23 +256,24 @@ int EdgeSamNode::RunMulti(std::vector<std::shared_ptr<DNNTensor>>& inputs,
   std::vector<hbDNNTensor> encode_outputs;
   Infer(encode_inputs, encode_outputs, 0);
 
-  hbSysFlushMem(&(encode_outputs[0].sysMem[0]), HB_SYS_MEM_CACHE_INVALIDATE);
-  float* data = reinterpret_cast<float*>(encode_outputs[0].sysMem[0].virAddr);
+  int32_t const output_size{static_cast<int32_t>((input_size - 1) * 2)};
+  output->output_tensors.resize(static_cast<size_t>(output_size));     
 
   // 2 mobile sam decode
-  std::vector<hbDNNTensor> decode_inputs;
-  std::vector<hbDNNTensor> decode_outputs;
-  decode_inputs.push_back(input_dnn_tensors[1]);
-  decode_inputs.push_back(encode_outputs[0]);
-  Infer(decode_inputs, decode_outputs, 1);
-  hbSysFreeMem(&(encode_outputs[0].sysMem[0]));
+  for (int32_t j{1}; j < input_size; j++) {
+    std::vector<hbDNNTensor> decode_inputs;
+    decode_inputs.push_back(input_dnn_tensors[j]);
+    decode_inputs.push_back(encode_outputs[0]);
+    std::vector<hbDNNTensor> decode_outputs;
+      
+    Infer(decode_inputs, decode_outputs, 1);
 
-  std::vector<hbDNNTensor> output_dnn_tensors = decode_outputs;
-  int32_t const output_size{static_cast<int32_t>(output_dnn_tensors.size())};
-  output->output_tensors.resize(static_cast<size_t>(output_size));     
-  for (int32_t i{0}; i < output_size; ++i) {
-    output->output_tensors[i] = std::make_shared<DNNTensor>(output_dnn_tensors[i]);
+    std::vector<hbDNNTensor> output_dnn_tensors = decode_outputs;
+    for (int32_t i{0}; i < 2; ++i) {
+      output->output_tensors[(j - 1) * 2 + i] = std::make_shared<DNNTensor>(output_dnn_tensors[i]);
+    }
   }
+  hbSysFreeMem(&(encode_outputs[0].sysMem[0]));
 
   clock_gettime(CLOCK_REALTIME, &time_now);
   output->rt_stat->infer_timespec_end = time_now;
@@ -811,6 +812,7 @@ int EdgeSamNode::FeedFromLocal() {
   clock_gettime(CLOCK_REALTIME, &time_now);
   dnn_output->perf_preprocess.stamp_end.sec = time_now.tv_sec;
   dnn_output->perf_preprocess.stamp_end.nanosec = time_now.tv_nsec;
+  dnn_output->boxes = boxes;
 
   // 4. 开始预测
   if (RunMulti(inputs, dnn_output, is_sync_mode_ == 1) != 0) {
@@ -951,7 +953,14 @@ void EdgeSamNode::RunPredict() {
     // inputs将会作为模型的输入通过RunInferTask接口传入
     std::vector<std::shared_ptr<DNNTensor>> inputs;
     inputs.push_back(image_tensor);
-    inputs.push_back(tensor_box);
+
+    for (int i = 0; i < boxes.size(); i++) {
+      std::vector<std::vector<float>> boxestemp;
+      boxestemp.push_back(boxes[i]);
+      std::shared_ptr<DNNTensor> tensor_box = 
+        InputPreProcessor::GetBoxTensor(boxestemp, tensor_properties);
+      inputs.push_back(tensor_box);
+    }
 
     uint32_t ret = 0;
     // 4. 开始预测

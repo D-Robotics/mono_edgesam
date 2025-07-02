@@ -26,6 +26,12 @@ from ament_index_python.packages import get_package_prefix
 
 def generate_launch_description():
 
+    basic_path = os.path.join(
+        get_package_prefix('mono_edgesam'),
+        'lib/mono_edgesam/config')
+
+    print("mono_edgesam basic_path is ", basic_path)
+
     # args that can be set from the command line or a default will be used
     image_width_launch_arg = DeclareLaunchArgument(
         "sam_image_width", default_value=TextSubstitution(text="1920")
@@ -40,10 +46,10 @@ def generate_launch_description():
         "sam_is_regular_box", default_value=TextSubstitution(text="1")
     )
     encoder_model_file_name_launch_arg = DeclareLaunchArgument(
-        "sam_encoder_model_file_name", default_value=TextSubstitution(text="config/edgesam_encoder_nv12.bin")
+        "sam_encoder_model_file_name", default_value=TextSubstitution(text="edgesam_encoder_1024.bin")
     )
     decoder_model_file_name_launch_arg = DeclareLaunchArgument(
-        "sam_decoder_model_file_name", default_value=TextSubstitution(text="config/edgesam_decoder_int8_nchw_no_dequantied.bin")
+        "sam_decoder_model_file_name", default_value=TextSubstitution(text="edgesam_decoder_1024.bin")
     )
 
     camera_type = os.getenv('CAM_TYPE')
@@ -80,7 +86,7 @@ def generate_launch_description():
         # 本地图片发布
         feedback_picture_arg = DeclareLaunchArgument(
             'publish_image_source',
-            default_value='./config/4.jpg',
+            default_value=[basic_path, "/", "4.jpg"],
             description='feedback picture')
 
         fb_node = IncludeLaunchDescription(
@@ -184,14 +190,14 @@ def generate_launch_description():
             {"is_regular_box": LaunchConfiguration(
                 "sam_is_regular_box")},
             {"is_shared_mem_sub": 1},
-            {"encoder_model_file_name": LaunchConfiguration(
-                "sam_encoder_model_file_name")},
-            {"decoder_model_file_name": LaunchConfiguration(
-                "sam_decoder_model_file_name")},
+            {"encoder_model_file_name": [basic_path, "/", LaunchConfiguration(
+                "sam_encoder_model_file_name")]},
+            {"decoder_model_file_name": [basic_path, "/", LaunchConfiguration(
+                "sam_decoder_model_file_name")]},
             {"msg_pub_topic_name": LaunchConfiguration(
                 "sam_msg_pub_topic_name")}
         ],
-        arguments=['--ros-args', '--log-level', 'info']
+        arguments=['--ros-args', '--log-level', 'warn']
     )
 
     shared_mem_node = IncludeLaunchDescription(

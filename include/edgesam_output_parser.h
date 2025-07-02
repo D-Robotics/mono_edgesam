@@ -69,6 +69,13 @@ class EdgeSamOutputParser {
     const int resized_img_w,
     Perception& perception);
 
+  int32_t GenMultiMaskScale(
+    std::vector<std::shared_ptr<DNNTensor>>& output_tensors,
+    const std::vector<std::vector<float>>& boxes,
+    const int resized_img_h,
+    const int resized_img_w,
+    Perception& perception);
+
   int32_t UpdateBox(std::vector<float> &box,
                     Perception& perception);
 

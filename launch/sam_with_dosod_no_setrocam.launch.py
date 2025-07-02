@@ -26,6 +26,12 @@ from ament_index_python.packages import get_package_prefix
 
 def generate_launch_description():
 
+    basic_path = os.path.join(
+        get_package_prefix('mono_edgesam'),
+        'lib/mono_edgesam/config')
+
+    print("mono_edgesam basic_path is ", basic_path)
+
     # args that can be set from the command line or a default will be used
     msg_pub_topic_name_launch_arg = DeclareLaunchArgument(
         "sam_msg_pub_topic_name", default_value=TextSubstitution(text="hobot_sam")
@@ -37,10 +43,10 @@ def generate_launch_description():
         "dosod_vocabulary_file_name", default_value=TextSubstitution(text="config/offline_vocabulary.json")
     )
     encoder_model_file_name_launch_arg = DeclareLaunchArgument(
-        "sam_encoder_model_file_name", default_value=TextSubstitution(text="config/edgesam_encoder_nv12.bin")
+        "sam_encoder_model_file_name", default_value=TextSubstitution(text="edgesam_encoder_512.bin")
     )
     decoder_model_file_name_launch_arg = DeclareLaunchArgument(
-        "sam_decoder_model_file_name", default_value=TextSubstitution(text="config/edgesam_decoder_int8_nchw_no_dequantied.bin")
+        "sam_decoder_model_file_name", default_value=TextSubstitution(text="edgesam_decoder_512.bin")
     )
 
     # 算法pkg
@@ -55,10 +61,10 @@ def generate_launch_description():
             {"is_shared_mem_sub": 0},
             {"ros_img_sub_topic_name": "/image_left_raw"},
             {"ai_msg_sub_topic_name": "/hobot_dnn_detection"},
-            {"encoder_model_file_name": LaunchConfiguration(
-                "sam_encoder_model_file_name")},
-            {"decoder_model_file_name": LaunchConfiguration(
-                "sam_decoder_model_file_name")},
+            {"encoder_model_file_name": [basic_path, "/", LaunchConfiguration(
+                "sam_encoder_model_file_name")]},
+            {"decoder_model_file_name": [basic_path, "/", LaunchConfiguration(
+                "sam_decoder_model_file_name")]},
             {"msg_pub_topic_name": LaunchConfiguration(
                 "sam_msg_pub_topic_name")}
         ],
