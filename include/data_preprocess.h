@@ -1,4 +1,4 @@
-// Copyright (c) 2024，D-Robotics.
+// Copyright (c) 2025，D-Robotics.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,13 +41,6 @@ class InputPreProcessor {
  public:
   InputPreProcessor() {}
   ~InputPreProcessor() {}
-
-  static std::shared_ptr<DNNTensor> GetBGRTensorFromBGR(
-                                          const cv::Mat &bgr_mat_tmp,                                                     
-                                          int scaled_img_height,
-                                          int scaled_img_width,
-                                          hbDNNTensorProperties &tensor_properties,
-                                          float &dst_ratio);
 
   static std::shared_ptr<DNNTensor> GetNV12TensorFromNV12Img(
                                           const char *in_img_data,

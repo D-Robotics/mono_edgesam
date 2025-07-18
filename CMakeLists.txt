@@ -1,4 +1,4 @@
-# Copyright (c) 2024，D-Robotics.
+# // Copyright (c) 2025，D-Robotics.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,9 +51,6 @@ include_directories(include
 
 if(PLATFORM_X5)
   message("build platform X5")
-  set(PREFIX_PATH x5)
-elseif(PLATFORM_X86)
-  message("build platform X86")
   set(PREFIX_PATH x5)
 else()
   message("invalid platform, build platform X5 default")

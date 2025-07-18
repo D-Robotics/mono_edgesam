@@ -1,4 +1,4 @@
-# Copyright (c) 2024，D-Robotics.
+# Copyright (c) 2025，D-Robotics.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ def generate_launch_description():
         "sam_image_height", default_value=TextSubstitution(text="1080")
     )
     msg_pub_topic_name_launch_arg = DeclareLaunchArgument(
-        "sam_msg_pub_topic_name", default_value=TextSubstitution(text="hobot_sam")
+        "sam_msg_pub_topic_name", default_value=TextSubstitution(text="perception/segmentation/edgesam")
     )    
     is_regular_box_launch_arg = DeclareLaunchArgument(
         "sam_is_regular_box", default_value=TextSubstitution(text="1")
