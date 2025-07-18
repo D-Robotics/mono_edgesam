@@ -94,13 +94,16 @@ hbm_img_msgs is a custom image message format used for image transmission in sha
 | ------------------- | -------------------------------------- | -------------------- | ------------------- |------------------------------------ |----------------------------------- |
 | cache_len_limit          | the length of the cached image buffer            | 否                   | int | 8                   |
 | feed_type           | Image source, 0: local; 1: subscribe   | No                   | int |0                   |
-| image               | Local image path                       | No        | string           | config/test.jpg     |
+| image               | Local image path                       | No        | string           | config/4.jpg     |
+| encoder_model_file_name               | encoder model file name                       | No        | string           | config/edgesam_encoder_1024.bin     |
+| decoder_model_file_name               | decoder model file name                       | No        | string           | config/edgesam_decoder_1024.bin     |
+| is_sync_mode  | 0: Synchronous Inference, 1: Asynchronous Inference        | 否                   | int | 0                   |                                                                         |
 | is_shared_mem_sub   | Subscribe to images using shared memory communication method | No  | int |0                   |
 | is_regular_box  | is use regular box | 否                   | int | 0                   |
 | is_padding_seg  | is padding segmetation result        | 否                   | int | 0                   |
 | dump_render_img     | Whether to render, 0: no; 1: yes       | No                   | int |0                   |
 | ai_msg_sub_topic_name | Topic name for subscribing ai msg to change detect box | No | string | /hobot_dnn_detection |
-| ai_msg_pub_topic_name | Topic name for publishing intelligent results for web display | No | string | /hobot_sam |
+| ai_msg_pub_topic_name | Topic name for publishing intelligent results for web display | No | string | /perception/segmentation/edgesam |
 | ros_img_sub_topic_name | Topic name for subscribing image msg | No | string | /image |
 
 ## Instructions
@@ -189,16 +192,18 @@ log:
 Command executed: `ros2 run mono_edgesam mono_edgesam --ros-args -p feed_type:=0 -p image:=config/4.jpg -p dump_render_img:=1`
 
 ```shell
-[WARN] [1750042018.143797820] [mono_edgesam]: Parameter:
+[WARN] [1752828713.164111693] [mono_edgesam]: Parameter:
  cache_len_limit: 8
  dump_render_img: 1
  feed_type(0:local, 1:sub): 0
  image: config/4.jpg
+ encoder_model_file_name: config/edgesam_encoder_1024.bin
+ decoder_model_file_name: config/edgesam_decoder_1024.bin
  is_regular_box: 0
  is_padding_seg: 0
  is_shared_mem_sub: 1
  is_sync_mode: 0
- ai_msg_pub_topic_name: /hobot_sam
+ ai_msg_pub_topic_name: /perception/segmentation/edgesam
  ai_msg_sub_topic_name: /hobot_dnn_detection
  ros_img_sub_topic_name: /image
 [BPU_PLAT]BPU Platform Version(1.3.6)!
@@ -223,7 +228,8 @@ name: edgesam_decoder.
  - (0) Layout: NONE, Shape: [1, 1, 1, 4], Type: HB_DNN_TENSOR_TYPE_S16.
  - (1) Layout: NCHW, Shape: [1, 4, 256, 256], Type: HB_DNN_TENSOR_TYPE_S8.
 
-[INFO] [0000084148.460530249] [MobileSam]: Draw result to file: render_feedback_0_0.jpeg
+[INFO] [1752828713.949130093] [mono_edgesam]: seg result size: 720896 valid_h: 704 valid_w: 1024
+[INFO] [1752828714.000021486] [sam ouput parser]: Draw result to file: render_sam_feedback_0_0.jpeg
 ```
 
 ## Render img:

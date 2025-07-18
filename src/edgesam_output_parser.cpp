@@ -1,5 +1,5 @@
 
-// Copyright (c) 2024，D-Robotics.
+// Copyright (c) 2025，D-Robotics.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ int32_t EdgeSamOutputParser::Parse(
   }
 
   if (ret != 0) {
-    RCLCPP_ERROR(rclcpp::get_logger("SamOutputParser"),
+    RCLCPP_ERROR(rclcpp::get_logger("sam ouput parser"),
                 "postprocess return error, code = %d",
                 ret);
   }
@@ -366,7 +366,7 @@ int RenderSeg(cv::Mat &mat, Parsing &seg, std::string& saving_path) {
   addWeighted(mat, alpha_f, parsing_img, 1 - alpha_f, 0.0, dst);
   mat = std::move(dst);
 
-  RCLCPP_INFO(rclcpp::get_logger("MobileSam"),
+  RCLCPP_INFO(rclcpp::get_logger("sam ouput parser"),
               "Draw result to file: %s",
               saving_path.c_str());
   cv::imwrite(saving_path, mat);

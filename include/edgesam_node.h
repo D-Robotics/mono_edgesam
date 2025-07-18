@@ -1,4 +1,4 @@
-// Copyright (c) 2024，D-Robotics.
+// Copyright (c) 2025，D-Robotics.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -150,7 +150,7 @@ class EdgeSamNode : public DnnNode {
       const hbm_img_msgs::msg::HbmMsg1080P::ConstSharedPtr msg);
 #endif
 
-  std::string ai_msg_pub_topic_name_ = "/hobot_sam";
+  std::string ai_msg_pub_topic_name_ = "/perception/segmentation/edgesam";
   rclcpp::Publisher<ai_msgs::msg::PerceptionTargets>::SharedPtr msg_publisher_ =
       nullptr;
 
@@ -165,14 +165,11 @@ class EdgeSamNode : public DnnNode {
       ros_img_subscription_ = nullptr;
   void RosImgProcess(const sensor_msgs::msg::Image::ConstSharedPtr msg);
 
-  std::string tros_distro
-      = std::string(std::getenv("TROS_DISTRO")? std::getenv("TROS_DISTRO") : "");
-
   int dump_render_img_ = 0;
   // 用于预测的图片来源, 0：本地彩色图, 1： 订阅到的image msg
   int feed_type_ = 0;
 
-  std::string image_file_ = "/opt/tros/" + tros_distro + "/lib/mono_edgesam/config/4.jpg";
+  std::string image_file_ = "./config/4.jpg";
   // 加载模型后，查询出模型输入分辨率
   int model_input_width_ = 1024;
   int model_input_height_ = 1024;
@@ -192,8 +189,8 @@ class EdgeSamNode : public DnnNode {
 
   // 多模型推理相关
   std::vector<std::string> model_file_names_ = {
-                        "/opt/tros/" + tros_distro + "/lib/mono_edgesam/config/edgesam_encoder_1024.bin",
-                        "/opt/tros/" + tros_distro + "/lib/mono_edgesam/config/edgesam_decoder_1024.bin"};
+                        "./config/edgesam_encoder_1024.bin",
+                        "./config/edgesam_decoder_1024.bin"};
                 
   std::vector<Model *> models_;
   std::vector<hbPackedDNNHandle_t> packed_dnn_handles_;

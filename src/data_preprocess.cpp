@@ -1,4 +1,4 @@
-// Copyright (c) 2024，D-Robotics.
+// Copyright (c) 2025，D-Robotics.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,81 +17,6 @@
 #include <cstring> // for memcpy
 
 #include "include/data_preprocess.h"
-
-std::shared_ptr<DNNTensor> InputPreProcessor::GetBGRTensorFromBGR(
-                                          const cv::Mat &bgr_mat_tmp,                                                     
-                                          int scaled_img_height,
-                                          int scaled_img_width,
-                                          hbDNNTensorProperties &tensor_properties,
-                                          float &dst_ratio) {
-  cv::Mat bgr_mat;
-  bgr_mat_tmp.copyTo(bgr_mat);
-  cv::Mat pixel_values_mat;
-  auto w_stride = ALIGN_16(scaled_img_width);
-  int channel = 3;
-  int src_elem_size = 4;
-  int original_img_width = bgr_mat.cols;
-  int original_img_height = bgr_mat.rows;
-
-  cv::Mat pad_frame;
-  pad_frame = cv::Mat(scaled_img_height, w_stride, CV_8UC3, cv::Scalar::all(0));
-  bgr_mat.copyTo(pad_frame(cv::Rect(0, 0, bgr_mat.cols, bgr_mat.rows)));
-
-  cv::Mat mat_tmp;
-  pad_frame.convertTo(mat_tmp, CV_32F); 
-  cv::cvtColor(mat_tmp, mat_tmp, cv::COLOR_BGR2RGB);
-  cv::Scalar mean(123.675, 116.28, 103.53);  // BGR 通道均值
-  cv::Scalar std(58.395, 57.12, 57.375);   // BGR 通道标准差
-
-  // 按通道减去均值，再除以标准差
-  std::vector<cv::Mat> channels(3);
-  cv::split(mat_tmp, channels);  // 分离通道
-
-  for (int i = 0; i < 3; i++) {
-    channels[i] = (channels[i] - mean[i]) / std[i];
-  }
-
-  // 合并通道
-  cv::merge(channels, pixel_values_mat);
-
-  auto *mem = new hbSysMem;
-  hbSysAllocCachedMem(mem, scaled_img_height * w_stride * channel * src_elem_size);
-  uint8_t *data = pixel_values_mat.data;
-  auto *hb_mem_addr = reinterpret_cast<uint8_t *>(mem->virAddr);
-
-  if (tensor_properties.tensorLayout == HB_DNN_LAYOUT_NCHW) {
-    for (int h = 0; h < scaled_img_height; ++h) {
-      for (int w = 0; w < scaled_img_width; ++w) {
-        for (int c = 0; c < channel; ++c) {
-          auto *raw = hb_mem_addr + c * scaled_img_height * w_stride * src_elem_size + h * w_stride * src_elem_size + w * src_elem_size;
-          auto *src = data + h * scaled_img_width * channel * src_elem_size + w * channel * src_elem_size + c * src_elem_size;
-          memcpy(raw, src, src_elem_size);
-        }
-      }
-    }
-  } else {
-    for (int h = 0; h < scaled_img_height; ++h) {
-      auto *raw = hb_mem_addr + h * w_stride * channel * src_elem_size;
-      auto *src = data + h * scaled_img_width * channel * src_elem_size;
-      memcpy(raw, src, scaled_img_width * channel * src_elem_size);
-    }
-  }
-
-  hbSysFlushMem(mem, HB_SYS_MEM_CACHE_CLEAN);
-  auto input_tensor = new DNNTensor;
-  input_tensor->properties = tensor_properties;
-  input_tensor->sysMem[0].virAddr = reinterpret_cast<void *>(mem->virAddr);
-  input_tensor->sysMem[0].phyAddr = mem->phyAddr;
-  input_tensor->sysMem[0].memSize = scaled_img_height * scaled_img_width * channel * src_elem_size;
-
-  return std::shared_ptr<DNNTensor>(
-      input_tensor, [mem](DNNTensor *input_tensor) {
-        // Release memory after deletion
-        hbSysFreeMem(mem);
-        delete mem;
-        delete input_tensor;
-      });
-}
 
 std::shared_ptr<DNNTensor> InputPreProcessor::GetNV12TensorFromNV12Img(
                                           const char *in_img_data,

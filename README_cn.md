@@ -1,6 +1,6 @@
 [English](./README.md) | 简体中文
 
-Getting Started with mono mobilesam
+Getting Started with mono edgesam
 =======
 
 # 功能介绍
@@ -98,12 +98,15 @@ hbm_img_msgs为自定义的图片消息格式, 用于shared mem场景下的图�
 | cache_len_limit          | 设置缓存的图片buffer长度            | 否                   | int | 8                   |                                                                         |
 | feed_type          | 图片来源, 0：本地；1：订阅            | 否                   | int | 0                   |                                                                         |
 | image              | 本地图片地址                          | 否                   | string | config/4.jpg     |                                                                         |
+| encoder_model_file_name              | 编码模型                          | 否                   | string | config/edgesam_encoder_1024.bin     |                                                                         |
+| decoder_model_file_name              | 解码模型                          | 否                   | string | config/edgesam_decoder_1024.bin     |                                                                         |
+| is_sync_mode  | 0: 同步推理, 1: 异步推理        | 否                   | int | 0                   |                                                                         |
 | is_shared_mem_sub  | 使用shared mem通信方式订阅图片        | 否                   | int | 0                   |                                                                         |
 | is_regular_box  | 使用固定检测框输入SAM        | 否                   | int | 0                   |                                                                         |
 | is_padding_seg  | 是否对分割结果padding适配双目图        | 否                   | int | 0                   |                                                                         |
 | dump_render_img    | 是否进行渲染，0：否；1：是            | 否                   | int | 0                   |                                                                         |
 | ai_msg_sub_topic_name | 订阅上游检测结果的topicname,用于SAM输入 | 否                   | string | /hobot_dnn_detection | |
-| ai_msg_pub_topic_name | 发布智能结果的topicname,用于web端展示 | 否                   | string | /hobot_sam | |
+| ai_msg_pub_topic_name | 发布智能结果的topicname,用于web端展示 | 否                   | string | /perception/segmentation/edgesam | |
 | ros_img_sub_topic_name | 接收ros图片话题名 | 否                   | string | /image | |
 
 ## 使用说明
@@ -211,16 +214,18 @@ log：
 运行命令：`ros2 run mono_edgesam mono_edgesam --ros-args -p feed_type:=0 -p image:=config/4.jpg -p dump_render_img:=1`
 
 ```shell
-[WARN] [1750042018.143797820] [mono_edgesam]: Parameter:
+[WARN] [1752828713.164111693] [mono_edgesam]: Parameter:
  cache_len_limit: 8
  dump_render_img: 1
  feed_type(0:local, 1:sub): 0
  image: config/4.jpg
+ encoder_model_file_name: config/edgesam_encoder_1024.bin
+ decoder_model_file_name: config/edgesam_decoder_1024.bin
  is_regular_box: 0
  is_padding_seg: 0
  is_shared_mem_sub: 1
  is_sync_mode: 0
- ai_msg_pub_topic_name: /hobot_sam
+ ai_msg_pub_topic_name: /perception/segmentation/edgesam
  ai_msg_sub_topic_name: /hobot_dnn_detection
  ros_img_sub_topic_name: /image
 [BPU_PLAT]BPU Platform Version(1.3.6)!
@@ -245,7 +250,8 @@ name: edgesam_decoder.
  - (0) Layout: NONE, Shape: [1, 1, 1, 4], Type: HB_DNN_TENSOR_TYPE_S16.
  - (1) Layout: NCHW, Shape: [1, 4, 256, 256], Type: HB_DNN_TENSOR_TYPE_S8.
 
-[INFO] [0000084148.460530249] [MobileSam]: Draw result to file: render_feedback_0_0.jpeg
+[INFO] [1752828713.949130093] [mono_edgesam]: seg result size: 720896 valid_h: 704 valid_w: 1024
+[INFO] [1752828714.000021486] [sam ouput parser]: Draw result to file: render_sam_feedback_0_0.jpeg
 ```
 
 ## 渲染结果

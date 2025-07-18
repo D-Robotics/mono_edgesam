@@ -1,5 +1,10 @@
 # Changelog for package mobie sam
 
+tros_0.1.3 (2025-07-18)
+------------------
+1. 更新 Readme。
+2. 更新默认输出话题名为 "/perception/segmentation/edgesam"。
+
 tros_0.1.2 (2025-07-02)
 ------------------
 1. 推理框架变动, 对应decoder部分对多个检测框输入时会重复执行decoder部分。

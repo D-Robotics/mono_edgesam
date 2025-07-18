@@ -1,4 +1,4 @@
-# Copyright (c) 2024，D-Robotics.
+# Copyright (c) 2025，D-Robotics.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ def generate_launch_description():
 
     # args that can be set from the command line or a default will be used
     msg_pub_topic_name_launch_arg = DeclareLaunchArgument(
-        "sam_msg_pub_topic_name", default_value=TextSubstitution(text="hobot_sam")
+        "sam_msg_pub_topic_name", default_value=TextSubstitution(text="perception/segmentation/edgesam")
     )
     model_file_name_launch_arg = DeclareLaunchArgument(
         "dosod_model_file_name", default_value=TextSubstitution(text="config/dosod_mlp3x_s_rep-int8.bin")
