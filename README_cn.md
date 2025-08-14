@@ -14,13 +14,15 @@ mono_edgesam package是基于 Edge SAM 量化部署的使用示例。图像数�
 # 开发环境
 
 - 编程语言: C/C++
-- 开发平台: X5
+- 开发平台: X5/S100
 - 系统版本：Ubuntu 22.04
 - 编译工具链: Linux GCC 11.4.0
 
 # 编译
 
 - X5版本：支持在X5 Ubuntu系统上编译和在PC上使用docker交叉编译两种方式。
+
+- S100版本：支持在S100 Ubuntu系统上编译和在PC上使用docker交叉编译两种方式。
 
 同时支持通过编译选项控制编译pkg的依赖和pkg的功能。
 
@@ -52,7 +54,7 @@ hbm_img_msgs为自定义的图片消息格式, 用于shared mem场景下的图�
 
 1、编译环境确认
 
-- 板端已安装X5 Ubuntu系统。
+- 板端已安装RDK Ubuntu系统。
 - 当前编译终端已设置TogetherROS环境变量：`source PATH/setup.bash`。其中PATH为TogetherROS的安装路径。
 - 已安装ROS2编译工具colcon。安装的ROS不包含编译工具colcon, 需要手动安装colcon。colcon安装命令：`pip install -U colcon-common-extensions`
 - 已编译dnn node package
@@ -76,6 +78,9 @@ hbm_img_msgs为自定义的图片消息格式, 用于shared mem场景下的图�
   ```shell
   # RDK X5
   bash robot_dev_config/build.sh -p X5 -s mono_edgesam
+
+  # RDK S100
+  bash robot_dev_config/build.sh -p S100 -s mono_edgesam
   ```
 
 - 编译选项中默认打开了shared mem通信方式。

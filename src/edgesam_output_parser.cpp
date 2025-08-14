@@ -33,23 +33,23 @@ int32_t EdgeSamOutputParser::Parse(
   result->perception.type = Perception::SEG;
   int ret = -1;
   if (output_tensors.size() == 2) {
-    hbSysFlushMem(&(output_tensors[0]->sysMem[0]), HB_SYS_MEM_CACHE_INVALIDATE);
-    hbSysFlushMem(&(output_tensors[1]->sysMem[0]), HB_SYS_MEM_CACHE_INVALIDATE);
+    output_tensors[0]->CACHE_INVALIDATE();
+    output_tensors[1]->CACHE_INVALIDATE();
     if (output_tensors[1]->properties.quantiType == NONE) {
-      float* masks = reinterpret_cast<float*>(output_tensors[1]->sysMem[0].virAddr);
+      float* masks = output_tensors[1]->GetTensorData<float>();
       ret = GenMask(masks, resized_img_h, resized_img_w, result->perception);
     } else if (output_tensors[0]->properties.quantiType == SCALE && 
                 output_tensors[1]->properties.quantiType == SCALE) {
-      int16_t* scores = reinterpret_cast<int16_t*>(output_tensors[0]->sysMem[0].virAddr);
-      int8_t* masks = reinterpret_cast<int8_t*>(output_tensors[1]->sysMem[0].virAddr);
+      int16_t* scores = output_tensors[0]->GetTensorData<int16_t>();
+      int8_t* masks = output_tensors[1]->GetTensorData<int8_t>();
       ret = GenMaskScale(scores, masks, boxes, resized_img_h, resized_img_w, result->perception);
     }
   } else {
-    ret = GenMultiMaskScale(output_tensors, boxes, resized_img_h, resized_img_w, result->perception);
-  }
-
-  for (int i = 0; i < output_tensors.size(); i++) {
-    hbSysFreeMem(&(output_tensors[i]->sysMem[0]));
+    if (output_tensors[1]->properties.quantiType == NONE) {
+      ret = GenMultiMask(output_tensors, boxes, resized_img_h, resized_img_w, result->perception);
+    } else if (output_tensors[0]->properties.quantiType == SCALE) {
+      ret = GenMultiMaskScale(output_tensors, boxes, resized_img_h, resized_img_w, result->perception);
+    }
   }
 
   if (ret != 0) {
@@ -212,6 +212,93 @@ int32_t EdgeSamOutputParser::GenMaskScale(const int16_t* scores,
   return 0;
 }
 
+int32_t EdgeSamOutputParser::GenMultiMask(std::vector<std::shared_ptr<DNNTensor>>& output_tensors,
+                                              const std::vector<std::vector<float>>& boxes,
+                                              const int resized_img_h,
+                                              const int resized_img_w,
+                                              Perception& perception) {
+  int channel = 4;
+
+  float valid_h_ratio = static_cast<float>(resized_img_h) / static_cast<float>(model_h_);
+  float valid_w_ratio = static_cast<float>(resized_img_w) / static_cast<float>(model_w_);
+
+  int valid_h = static_cast<int>(valid_h_ratio * output_height_);
+  int valid_w = static_cast<int>(valid_w_ratio * output_width_);
+
+  int stride = output_height_ * output_width_;
+  std::vector<cv::Mat> parsing_imgs;
+  int num_classes = boxes.size();
+
+  for (int i = 0; i < boxes.size(); i++) {
+    output_tensors[i * 2]->CACHE_INVALIDATE();
+    output_tensors[i * 2 + 1]->CACHE_INVALIDATE();
+    float* scores = output_tensors[i * 2]->GetTensorData<float>();
+    float* mask = output_tensors[i * 2 + 1]->GetTensorData<float>();
+
+    int index = 0;
+    float score = 0;
+    for (int i = 0; i < 4; i++) {
+      if (scores[i] > score) {
+        index = i;
+        score = scores[i];
+      }
+    }
+    cv::Mat parsing_img(valid_h, valid_w, CV_32FC1, cv::Scalar::all(0));
+    float *parsing_img_ptr = parsing_img.ptr<float>();
+    for (int h = 0; h < valid_h; h++) {
+      for (int w = 0; w < valid_w; w++) {
+        int offect = h * output_width_ + w;
+        const float* data = mask + index * stride + offect;
+        *parsing_img_ptr++ = data[0];
+      }
+    }
+    parsing_imgs.push_back(parsing_img);
+  }
+
+  valid_h = resized_img_h;
+  valid_w = resized_img_w;
+  cv::Size size(valid_w, valid_h);
+
+  for (auto &parsing_img: parsing_imgs) {
+    // resize parsing image
+    cv::resize(parsing_img, parsing_img, size, 0, 0, cv::INTER_LINEAR);
+  }
+
+  valid_h = valid_h;
+  perception.seg.data.resize(valid_h * valid_w);
+  perception.seg.seg.resize(valid_h * valid_w);
+
+  perception.seg.valid_h = valid_h;
+  perception.seg.valid_w = valid_w;
+  perception.seg.height = static_cast<int>(model_h_ * valid_h_ratio);
+  perception.seg.width = static_cast<int>(model_w_ * valid_w_ratio);
+  perception.seg.channel = channel;
+  perception.seg.num_classes = num_classes + 1;
+
+  for (int n = 0; n < num_classes; n++) {
+    auto &parsing_img = parsing_imgs[n];
+    float *parsing_img_ptr = parsing_img.ptr<float>();
+    for (int h = 0; h < valid_h; h++) {
+      for (int w = 0; w < valid_w; w++) {
+        int offect = h * valid_w + w;
+        int top_index = -1;
+        if (n == 0) {
+          top_index = 0;
+        }
+        if (*parsing_img_ptr++ > mask_threshold_) {
+          top_index = n + 1;
+        }
+        if (top_index != -1) {
+          perception.seg.seg[offect] = top_index;
+          perception.seg.data[offect] = static_cast<float>(top_index);
+        }  
+      }
+    }
+  }
+
+  return 0;
+}
+
 int32_t EdgeSamOutputParser::GenMultiMaskScale(std::vector<std::shared_ptr<DNNTensor>>& output_tensors,
                                               const std::vector<std::vector<float>>& boxes,
                                               const int resized_img_h,
@@ -230,10 +317,10 @@ int32_t EdgeSamOutputParser::GenMultiMaskScale(std::vector<std::shared_ptr<DNNTe
   int num_classes = boxes.size();
 
   for (int i = 0; i < boxes.size(); i++) {
-    hbSysFlushMem(&(output_tensors[i * 2]->sysMem[0]), HB_SYS_MEM_CACHE_INVALIDATE);
-    hbSysFlushMem(&(output_tensors[i * 2 + 1]->sysMem[0]), HB_SYS_MEM_CACHE_INVALIDATE);
-    int16_t* scores = reinterpret_cast<int16_t*>(output_tensors[i * 2]->sysMem[0].virAddr);
-    int8_t* mask = reinterpret_cast<int8_t*>(output_tensors[i * 2 + 1]->sysMem[0].virAddr);
+    output_tensors[i * 2]->CACHE_INVALIDATE();
+    output_tensors[i * 2 + 1]->CACHE_INVALIDATE();
+    int16_t* scores = output_tensors[i * 2]->GetTensorData<int16_t>();
+    int8_t* mask = output_tensors[i * 2 + 1]->GetTensorData<int8_t>();
 
     int index = 0;
     int16_t score = 0;
@@ -295,43 +382,6 @@ int32_t EdgeSamOutputParser::GenMultiMaskScale(std::vector<std::shared_ptr<DNNTe
       }
     }
   }
-
-  return 0;
-}
-
-int32_t EdgeSamOutputParser::UpdateBox(std::vector<float> &box,
-                    Perception& perception) {
-
-  int valid_h = perception.seg.valid_h;
-  int valid_w = perception.seg.valid_w;
-
-  int count = 0;
-  for (int h = 0; h < valid_h; h++) {
-    int w = static_cast<int>(box[0]);
-    count += perception.seg.data[h * valid_w + w] != 0 ? 1 : 0;
-  }
-  box[0] += count > 5 ? -1 : 1;
-
-  count = 0;
-  for (int h = 0; h < valid_h; h++) {
-    int w = static_cast<int>(box[2]);
-    count += perception.seg.data[h * valid_w + w] != 0 ? 1 : 0;
-  }
-  box[2] += count > 5 ? 1 : -1;
-
-  count = 0;
-  for (int w = 0; w < valid_w; w++) {
-    int h = static_cast<int>(box[1]);
-    count += perception.seg.data[h * valid_w + w] != 0 ? 1 : 0;
-  }
-  box[1] += count > 5 ? -1 : 1;
-
-  count = 0;
-  for (int w = 0; w < valid_w; w++) {
-    int h = static_cast<int>(box[3]);
-    count += perception.seg.data[h * valid_w + w] != 0 ? 1 : 0;
-  }
-  box[3] += count > 5 ? 1 : -1;
 
   return 0;
 }

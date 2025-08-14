@@ -45,21 +45,30 @@ find_package(sensor_msgs REQUIRED)
 
 add_definitions(-DSHARED_MEM_ENABLED)
 
-include_directories(include
-  ${PROJECT_SOURCE_DIR}
-)
-
 if(PLATFORM_X5)
   message("build platform X5")
+  add_definitions(-DPLATFORM_X5)
   set(PREFIX_PATH x5)
+elseif(PLATFORM_S100)
+  message("build platform S100")
+  add_definitions(-DPLATFORM_S100)
+  set(PREFIX_PATH s100)
 else()
   message("invalid platform, build platform X5 default")
+  add_definitions(-DPLATFORM_X5)
   set(PREFIX_PATH x5)
 endif()
 
 message("CMAKE_SYSROOT is " ${CMAKE_SYSROOT})
+
+include_directories(
+  include
+  ${PROJECT_SOURCE_DIR}
+)
+
 include_directories(
   ${CMAKE_SYSROOT}/usr/include/
+  ${CMAKE_SYSROOT}/usr/include/hobot/
   ${CMAKE_SYSROOT}/usr/include/opencv/
   ${CMAKE_SYSROOT}/usr/include/eigen/
 )
@@ -73,9 +82,9 @@ link_directories(
 add_executable(${PROJECT_NAME}
   src/main.cpp
   src/ai_msg_manage.cpp
-  src/edgesam_node.cpp
+  src/${PREFIX_PATH}/edgesam_node.cpp
   src/edgesam_output_parser.cpp
-  src/data_preprocess.cpp
+  src/${PREFIX_PATH}/data_preprocess.cpp
 )
 
 ament_target_dependencies(
@@ -110,7 +119,7 @@ install(FILES
 )
 
 install(DIRECTORY
-  ${PROJECT_SOURCE_DIR}/launch/
+  ${PROJECT_SOURCE_DIR}/launch/${PREFIX_PATH}/
   DESTINATION share/${PROJECT_NAME}/launch
 )
 

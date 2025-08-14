@@ -15,7 +15,7 @@
 #include <memory>
 #include <string>
 
-#include "include/edgesam_node.h"
+#include "edgesam_node.h"
 #include "rclcpp/rclcpp.hpp"
 
 int main(int argc, char** argv) {

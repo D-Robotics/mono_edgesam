@@ -50,6 +50,22 @@ class InputPreProcessor {
                                           int scaled_img_width,
                                           hbDNNTensorProperties &tensor_properties);
 
+  static std::shared_ptr<DNNTensor> GetYTensorFromNV12Img(
+                                          const char *in_img_data,
+                                          const int &in_img_height,
+                                          const int &in_img_width,
+                                          int scaled_img_height,
+                                          int scaled_img_width,
+                                          hbDNNTensorProperties &tensor_properties);
+
+  static std::shared_ptr<DNNTensor> GetUVTensorFromNV12Img(
+                                          const char *in_img_data,
+                                          const int &in_img_height,
+                                          const int &in_img_width,
+                                          int scaled_img_height,
+                                          int scaled_img_width,
+                                          hbDNNTensorProperties &tensor_properties);
+
   /**
    * @brief 图片数据预处理
    * @param in_data 数据
