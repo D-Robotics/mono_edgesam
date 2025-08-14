@@ -182,8 +182,8 @@ class EdgeSamNode : public DnnNode {
   // 是否向下padding分割图
   int is_padding_seg_ = 0;
 
-//   std::vector<float> regular_box_ = {256.0, 256.0, 768.0, 512.0};   // 对应 1024 * 1024 模型输入
-  std::vector<float> regular_box_ = {331.2, 195.08884, 849.6, 590.0638};   // 对应 1024 * 1024 模型输入
+//   std::vector<float> regular_box_ = {331.2, 195.08884, 849.6, 590.0638};   // 对应 1024 * 1024 模型输入
+  std::vector<float> regular_box_;
 
   std::string model_name_ = "sam";
 
@@ -193,7 +193,16 @@ class EdgeSamNode : public DnnNode {
                         "./config/edgesam_decoder_1024.bin"};
                 
   std::vector<Model *> models_;
+
+#ifdef PLATFORM_X5
   std::vector<hbPackedDNNHandle_t> packed_dnn_handles_;
+  using CacheImgType = std::pair<std::shared_ptr<SamOutput>, std::shared_ptr<DNNTensor>>;
+#else
+  std::vector<hbDNNPackedHandle_t> packed_dnn_handles_;
+  using CacheImgType = std::pair<std::shared_ptr<SamOutput>,
+                                std::pair<std::shared_ptr<DNNTensor>, std::shared_ptr<DNNTensor>>>;
+#endif
+
   ThreadPool threadPool;
 
   std::shared_ptr<AiMsgManage> ai_msg_manage_ = nullptr;
@@ -205,8 +214,7 @@ class EdgeSamNode : public DnnNode {
   int cache_len_limit_ = 8;
   std::mutex mtx_img_;
   std::condition_variable cv_img_;
-  using CacheImgType = std::pair<std::shared_ptr<SamOutput>,
-                                 std::shared_ptr<DNNTensor>>;
+
   std::queue<CacheImgType> cache_img_;
   void RunPredict();
   std::shared_ptr<std::thread> predict_task_ = nullptr;
