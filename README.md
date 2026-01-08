@@ -14,15 +14,17 @@ In this example, we provide two deployment methods:
 # Development Environment
 
 - Programming Language: C/C++
-- Development Platform: X5/S100
-- System Version: Ubuntu 22.04
-- Compilation Toolchain: Linaro GCC 11.4.0
+- Development Platform: X5/S100/S600
+- System Version: Ubuntu 22.04/Ubuntu 24.04
+- Compilation Toolchain: Linaro GCC 11.4.0/Linaro GCC 13.3.0
 
 # Compilation
 
 - X5 Version: Supports compilation on the X5 Ubuntu system and cross-compilation using Docker on a PC.
 
 - S100 Version: Supports compilation on the S100 Ubuntu system and cross-compilation using Docker on a PC.
+
+- S600 Version: Supports compilation on the S600 Ubuntu system and cross-compilation using Docker on a PC.
 
 It also supports controlling the dependencies and functionality of the compiled pkg through compilation options.
 
@@ -51,7 +53,7 @@ hbm_img_msgs is a custom image message format used for image transmission in sha
 
 1. Compilation Environment Verification
 
-- The X5 Ubuntu system is installed on the board.
+- The RDK Ubuntu system is installed on the board.
 - The current compilation terminal has set up the TogetherROS environment variable: `source PATH/setup.bash`. Where PATH is the installation path of TogetherROS.
 - The ROS2 compilation tool colcon is installed. If the installed ROS does not include the compilation tool colcon, it needs to be installed manually. Installation command for colcon: `pip install -U colcon-common-extensions`.
 - The dnn node package has been compiled.
@@ -60,7 +62,7 @@ hbm_img_msgs is a custom image message format used for image transmission in sha
 
 - Compilation command: `colcon build --packages-select mono_edgesam`
 
-## Docker Cross-Compilation for X5 Version
+## Docker Cross-Compilation
 
 1. Compilation Environment Verification
 
@@ -77,6 +79,9 @@ hbm_img_msgs is a custom image message format used for image transmission in sha
   bash robot_dev_config/build.sh -p X5 -s mono_edgesam
 
   # RDK S100
+  bash robot_dev_config/build.sh -p S100 -s mono_edgesam
+
+  # RDK S600
   bash robot_dev_config/build.sh -p S100 -s mono_edgesam
   ```
 
