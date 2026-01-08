@@ -14,15 +14,17 @@ mono_edgesam package是基于 Edge SAM 量化部署的使用示例。图像数�
 # 开发环境
 
 - 编程语言: C/C++
-- 开发平台: X5/S100
-- 系统版本：Ubuntu 22.04
-- 编译工具链: Linux GCC 11.4.0
+- 开发平台: X5/S100/S600
+- 系统版本：Ubuntu 22.04/Ubuntu 24.04
+- 编译工具链: Linux GCC 11.4.0/Linux GCC 13.3.0
 
 # 编译
 
 - X5版本：支持在X5 Ubuntu系统上编译和在PC上使用docker交叉编译两种方式。
 
 - S100版本：支持在S100 Ubuntu系统上编译和在PC上使用docker交叉编译两种方式。
+
+- S600版本：支持在S600 Ubuntu系统上编译和在PC上使用docker交叉编译两种方式。
 
 同时支持通过编译选项控制编译pkg的依赖和pkg的功能。
 
@@ -50,7 +52,7 @@ hbm_img_msgs为自定义的图片消息格式, 用于shared mem场景下的图�
 - 如果关闭, 编译和运行不依赖hbm_img_msgs pkg, 支持使用原生ros和tros进行编译。
 - 对于shared mem通信方式, 当前只支持订阅nv12格式图片。
 
-## X5 Ubuntu系统上编译
+## RDK Ubuntu系统上编译
 
 1、编译环境确认
 
@@ -63,7 +65,7 @@ hbm_img_msgs为自定义的图片消息格式, 用于shared mem场景下的图�
 
 - 编译命令：`colcon build --packages-select mono_edgesam`
 
-## docker交叉编译 X5版本
+## docker交叉编译
 
 1、编译环境确认
 
@@ -81,6 +83,9 @@ hbm_img_msgs为自定义的图片消息格式, 用于shared mem场景下的图�
 
   # RDK S100
   bash robot_dev_config/build.sh -p S100 -s mono_edgesam
+
+  # RDK S600
+  bash robot_dev_config/build.sh -p S600 -s mono_edgesam
   ```
 
 - 编译选项中默认打开了shared mem通信方式。
@@ -127,7 +132,7 @@ ros2 topic pub /hobot_dnn_detection ai_msgs/msg/PerceptionTargets '{"targets": [
 
 - 编译成功后, 将生成的install路径拷贝到地平线RDK上（如果是在RDK上编译, 忽略拷贝步骤）, 并执行如下命令运行。
 
-## X5 Ubuntu系统上运行
+## RDK Ubuntu系统上运行
 
 运行方式1, 使用可执行文件启动：
 ```shell
@@ -170,7 +175,7 @@ ros2 launch mono_edgesam sam.launch.py
 ros2 launch mono_edgesam sam_with_dosod.launch.py
 ```
 
-## X5 yocto系统上运行
+## Linux Buildroot 系统上运行
 
 ```shell
 export ROS_LOG_DIR=/userdata/
@@ -191,23 +196,6 @@ cp -r install/lib/mono_edgesam/config/ .
 ./install/lib/mono_edgesam/mono_edgesam --ros-args -p feed_type:=1 --ros-args --log-level warn -p ai_msg_sub_topic_name:="/hobot_dnn_detection"
 
 ros2 topic pub /hobot_dnn_detection ai_msgs/msg/PerceptionTargets '{"targets": [{"rois": [{"rect": {"x_offset": 96, "y_offset": 96, "width": 192, "height": 96}, "type": "anything"}]}] }'
-```
-
-## X86 Ubuntu系统上运行
-
-```shell
-export COLCON_CURRENT_PREFIX=./install
-source ./install/setup.bash
-# config中为示例使用的模型, 根据实际安装路径进行拷贝
-cp -r ./install/lib/mono_edgesam/config/ .
-
-export CAM_TYPE=fb
-
-# 运行模式1：启动launch文件, 单独启动 sam 节点
-ros2 launch mono_edgesam sam.launch.py
-
-# 运行模式2：启动launch文件, 启动检测节点 + sam节点
-ros2 launch mono_edgesam sam_with_dosod.launch.py
 ```
 
 # 结果分析

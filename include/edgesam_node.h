@@ -17,7 +17,11 @@
 #include <vector>
 
 #include "ai_msgs/msg/perception_targets.hpp"
-#include "cv_bridge/cv_bridge.h"
+#ifdef CV_BRIDGE_CPP
+#include <cv_bridge/cv_bridge.hpp>
+#else
+#include <cv_bridge/cv_bridge.h>
+#endif
 #include "dnn_node/dnn_node.h"
 #include "dnn_node/util/image_proc.h"
 #include "dnn_node/util/output_parser/perception_common.h"
@@ -187,17 +191,18 @@ class EdgeSamNode : public DnnNode {
 
   std::string model_name_ = "sam";
 
-  // 多模型推理相关
-  std::vector<std::string> model_file_names_ = {
-                        "./config/edgesam_encoder_1024.bin",
-                        "./config/edgesam_decoder_1024.bin"};
-                
   std::vector<Model *> models_;
 
 #ifdef PLATFORM_X5
+  std::vector<std::string> model_file_names_ = {
+                    "./config/edgesam_encoder_1024.bin",
+                    "./config/edgesam_decoder_1024.bin"};
   std::vector<hbPackedDNNHandle_t> packed_dnn_handles_;
   using CacheImgType = std::pair<std::shared_ptr<SamOutput>, std::shared_ptr<DNNTensor>>;
 #else
+  std::vector<std::string> model_file_names_ = {
+                    "./config/edgesam_encoder_1024.hbm",
+                    "./config/edgesam_decoder_1024.hbm"};
   std::vector<hbDNNPackedHandle_t> packed_dnn_handles_;
   using CacheImgType = std::pair<std::shared_ptr<SamOutput>,
                                 std::pair<std::shared_ptr<DNNTensor>, std::shared_ptr<DNNTensor>>>;
